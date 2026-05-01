@@ -1,0 +1,6 @@
+{
+  "name": "Wheel of Names",
+  "description": "An interactive, colorful spinning wheel for picking random names with smooth animations and history tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
