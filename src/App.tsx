@@ -56,6 +56,7 @@ interface SavedList {
   id: string;
   name: string;
   names: string[];
+  groups?: { id: string; name: string; members: string[] }[];
 }
 
 export default function App() {
@@ -405,13 +406,24 @@ export default function App() {
     }
 
     const existingIndex = savedLists.findIndex(l => l.name === listName);
+    const listToSave: SavedList = { 
+      id: Date.now().toString(), 
+      name: listName, 
+      names: namesToSave,
+      groups: generatedGroups.length > 0 ? generatedGroups : undefined
+    };
+
     if (existingIndex >= 0) {
       const newLists = [...savedLists];
-      newLists[existingIndex].names = namesToSave;
+      newLists[existingIndex] = {
+        ...newLists[existingIndex],
+        names: namesToSave,
+        groups: generatedGroups.length > 0 ? generatedGroups : undefined
+      };
       setSavedLists(newLists);
       setNewListName(listName);
     } else {
-      setSavedLists([...savedLists, { id: Date.now().toString(), name: listName, names: namesToSave }]);
+      setSavedLists([...savedLists, listToSave]);
       setNewListName(listName);
     }
 
@@ -823,6 +835,10 @@ export default function App() {
                                                 setNames(list.names);
                                                 setNewName(list.names.join('\n'));
                                                 setNewListName(list.name);
+                                                if (list.groups && list.groups.length > 0) {
+                                                  setGeneratedGroups(list.groups);
+                                                  setGroupCount(list.groups.length);
+                                                }
                                                 setShowSavedListsDropdown(false);
                                               }}
                                               className="flex-1 text-left px-2 min-w-0"
@@ -831,6 +847,13 @@ export default function App() {
                                               <p className="text-xs text-slate-400 font-medium flex items-center gap-1.5 mt-0.5">
                                                 <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full"></span>
                                                 {list.names.length} នាក់
+                                                {list.groups && list.groups.length > 0 && (
+                                                  <>
+                                                    <span className="mx-1">•</span>
+                                                    <Users size={10} className="text-indigo-400" />
+                                                    <span>មាន {list.groups.length} ក្រុម</span>
+                                                  </>
+                                                )}
                                               </p>
                                             </button>
                                             
