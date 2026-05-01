@@ -84,6 +84,91 @@ export const Wheel: React.FC<WheelProps> = ({
     osc.stop(ctx.currentTime + duration);
   };
 
+  const playWinSound = () => {
+    if (!soundEnabled || !audioContextRef.current) return;
+    const ctx = audioContextRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const now = ctx.currentTime;
+    const volumeMult = volume;
+
+    const playNote = (freq: number, start: number, duration: number, type: OscillatorType = 'triangle', gainVal: number = 0.2) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, start);
+      
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(gainVal * volumeMult, start + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.01, start + duration);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + duration);
+    };
+
+    // Tada! pattern: two short stabs followed by a long sustained high chord
+    
+    // First stab (G4, C5, E5) - Short
+    const t1 = now;
+    playNote(392.00, t1, 0.2, 'triangle', 0.2); // G4
+    playNote(523.25, t1, 0.2, 'triangle', 0.2); // C5
+    playNote(659.25, t1, 0.2, 'triangle', 0.2); // E5
+
+    // Second stab (G4, C5, E5) - Slightly later, very short
+    const t2 = now + 0.25;
+    playNote(392.00, t2, 0.15, 'triangle', 0.2);
+    playNote(523.25, t2, 0.15, 'triangle', 0.2);
+    playNote(659.25, t2, 0.15, 'triangle', 0.2);
+
+    // Final big chord (C5, E5, G5, C6) - Sustained and bright
+    const t3 = now + 0.5;
+    playNote(523.25, t3, 2.0, 'triangle', 0.25); // C5
+    playNote(659.25, t3, 2.0, 'triangle', 0.25); // E5
+    playNote(783.99, t3, 2.0, 'triangle', 0.25); // G5
+    playNote(1046.50, t3, 1.5, 'sine', 0.15);    // C6 (Sparkle)
+    
+    // Play requested sound effect
+    const externalSound = new Audio('https://www.myinstants.com/media/sounds/road-rash-64-second-place-23684.mp3');
+    externalSound.volume = volumeMult;
+    externalSound.play().catch(e => console.warn("External sound failed to play:", e));
+
+    // Crowd Cheering / Applause
+    const cheerSound = new Audio('https://www.myinstants.com/media/sounds/cheering-2.mp3');
+    cheerSound.volume = volumeMult * 0.8;
+    cheerSound.play().catch(e => console.warn("Cheer sound failed to play:", e));
+
+    const yaySound = new Audio('https://www.myinstants.com/media/sounds/yay-6.mp3');
+    yaySound.volume = volumeMult * 0.7;
+    yaySound.play().catch(e => console.warn("Yay sound failed to play:", e));
+
+    // Add a bit of noise for a "shimmer" effect
+    const noise = ctx.createBufferSource();
+    const bufferSize = ctx.sampleRate * 2;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    noise.buffer = buffer;
+    
+    const noiseGain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(5000, now);
+    
+    noiseGain.gain.setValueAtTime(0, t3);
+    noiseGain.gain.linearRampToValueAtTime(0.05 * volumeMult, t3 + 0.1);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, t3 + 1.0);
+    
+    noise.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(ctx.destination);
+    noise.start(t3);
+    noise.stop(t3 + 1.0);
+  };
+
   const drawWheel = (currRotation: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -183,7 +268,8 @@ export const Wheel: React.FC<WheelProps> = ({
 
   useEffect(() => {
     if (isSpinning) {
-      const extraSpins = 5 + Math.random() * 5;
+      // Increase spins to at least 10-15 rotations for a more satisfying feel
+      const extraSpins = 10 + Math.random() * 5;
       const finalRotation = rotation.get() + (Math.PI * 2 * extraSpins);
       
       animate(rotation, finalRotation, {
@@ -200,6 +286,7 @@ export const Wheel: React.FC<WheelProps> = ({
           const pointerAngle = (Math.PI * 1.5) - normalized;
           const winningIndex = Math.floor(((pointerAngle % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2) / angleStep);
           
+          playWinSound();
           onSpinComplete(names[winningIndex]);
         }
       });

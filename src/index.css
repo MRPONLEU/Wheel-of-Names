@@ -2,8 +2,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Outfit", sans-serif;
+  --font-sans: "Hanuman", "Kantumruy Pro", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Hanuman", "Outfit", sans-serif;
 }
 
 @layer base {

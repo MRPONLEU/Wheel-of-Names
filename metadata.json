@@ -1,6 +1,6 @@
 {
-  "name": "Wheel of Names",
-  "description": "An interactive, colorful spinning wheel for picking random names with smooth animations and history tracking.",
+  "name": "កងវិលសំណាង",
+  "description": "កម្មវិធីកងវិលសំណាងសម្រាប់ជ្រើសរើសឈ្មោះដោយចៃដន្យ ជាមួយនឹងចលនាដ៏រលូន និងមានការរក្សាទុកប្រវត្តិអ្នកឈ្នះផងដែរ។",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }
