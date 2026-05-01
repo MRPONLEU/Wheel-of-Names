@@ -19,7 +19,8 @@ import {
   Volume2,
   VolumeX,
   Maximize,
-  Minimize
+  Minimize,
+  ChevronDown
 } from 'lucide-react';
 import { Wheel } from './components/Wheel';
 import { Confetti } from './components/Confetti';
@@ -113,6 +114,18 @@ export default function App() {
   const [newName, setNewName] = useState(() => {
     return localStorage.getItem('wheel-names-text') || '';
   });
+  const [showSavedListsDropdown, setShowSavedListsDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowSavedListsDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   const [names, setNames] = useState<string[]>(() => {
     const saved = localStorage.getItem('wheel-names');
     return saved ? JSON.parse(saved) : INITIAL_NAMES;
@@ -317,11 +330,9 @@ export default function App() {
   };
 
   const handleDeleteList = (id: string, name: string) => {
-    if (confirm(`តើអ្នកប្រាកដថាចង់លុបក្រុម "${name}" ឬទេ?`)) {
-      setSavedLists(prev => prev.filter(l => l.id !== id));
-      if (newListName === name) {
-        setNewListName('');
-      }
+    setSavedLists(prev => prev.filter(l => l.id !== id));
+    if (newListName === name) {
+      setNewListName('');
     }
   };
   const shuffleArray = <T,>(array: T[]): T[] => {
@@ -757,24 +768,106 @@ export default function App() {
                 <div className="flex-1 flex flex-col gap-6 h-full min-h-0">
                   <div className="flex gap-6 flex-1 min-h-0">
                     {/* Input Area */}
-                    <div className="w-1/4 flex flex-col gap-3 min-w-[200px]">
+                    <div className="w-1/4 flex flex-col gap-3 min-w-[200px] relative" ref={dropdownRef}>
                       <div className="flex justify-between items-center px-2">
                         <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                           បញ្ជីឈ្មោះសិស្ស
                         </label>
-                        <input 
-                          type="file" 
-                          ref={fileInputRef} 
-                          className="hidden" 
-                          accept=".csv,.txt"
-                          onChange={handleImportCSV} 
-                        />
-                        <button 
-                          onClick={() => fileInputRef.current?.click()}
-                          className="text-[10px] font-black text-indigo-500 hover:text-indigo-700 flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded"
-                        >
-                          <FileUp size={12} /> Import
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <button 
+                              onClick={() => setShowSavedListsDropdown(!showSavedListsDropdown)}
+                              className={`text-[10px] font-black text-slate-500 hover:text-indigo-600 flex items-center gap-1 bg-slate-100 px-2 py-1 rounded transition-colors ${showSavedListsDropdown ? 'bg-indigo-50 text-indigo-600' : ''}`}
+                            >
+                              <HistoryIcon size={12} /> បញ្ជីចាស់
+                              <ChevronDown size={10} className={`transition-transform duration-200 ${showSavedListsDropdown ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            <AnimatePresence>
+                              {showSavedListsDropdown && (
+                                <motion.div 
+                                  initial={{ opacity: 0, scaleY: 0, originY: 0 }}
+                                  animate={{ opacity: 1, scaleY: 1 }}
+                                  exit={{ opacity: 0, scaleY: 0 }}
+                                  className="absolute left-0 right-0 top-[35px] bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden"
+                                >
+                                  <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">
+                                      បញ្ជីដែលបានរក្សាទុក ({savedLists.length})
+                                    </h4>
+                                    <button 
+                                      onClick={() => setShowSavedListsDropdown(false)}
+                                      className="p-1 hover:bg-slate-200 rounded-full transition-colors text-slate-400"
+                                    >
+                                      <Minimize size={14} />
+                                    </button>
+                                  </div>
+                                  
+                                  <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                                    {savedLists.length === 0 ? (
+                                      <div className="p-10 text-center">
+                                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-slate-200">
+                                          <HistoryIcon size={24} className="text-slate-300" />
+                                        </div>
+                                        <p className="text-sm text-slate-400 font-medium italic">មិនទាន់មានបញ្ជីនៅឡើយ</p>
+                                      </div>
+                                    ) : (
+                                      <div className="p-2 space-y-1">
+                                        {savedLists.map((list) => (
+                                          <div 
+                                            key={list.id} 
+                                            className="group flex items-center justify-between p-3 hover:bg-indigo-50 rounded-xl transition-all cursor-pointer border border-transparent hover:border-indigo-100"
+                                          >
+                                            <button 
+                                              onClick={() => {
+                                                setNames(list.names);
+                                                setNewName(list.names.join('\n'));
+                                                setNewListName(list.name);
+                                                setShowSavedListsDropdown(false);
+                                              }}
+                                              className="flex-1 text-left px-2 min-w-0"
+                                            >
+                                              <p className="text-base font-bold text-slate-700 truncate">{list.name}</p>
+                                              <p className="text-xs text-slate-400 font-medium flex items-center gap-1.5 mt-0.5">
+                                                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full"></span>
+                                                {list.names.length} នាក់
+                                              </p>
+                                            </button>
+                                            
+                                            <button 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteList(list.id, list.name);
+                                              }}
+                                              className="p-2.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all sm:opacity-0 group-hover:opacity-100"
+                                              title="លុបចោល"
+                                            >
+                                              <Trash2 size={18} />
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                          
+                          <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            accept=".csv,.txt"
+                            onChange={handleImportCSV} 
+                          />
+                          <button 
+                            onClick={() => fileInputRef.current?.click()}
+                            className="text-[10px] font-black text-indigo-500 hover:text-indigo-700 flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded"
+                          >
+                            <FileUp size={12} /> Import
+                          </button>
+                        </div>
                       </div>
                       <textarea 
                         value={newName}
